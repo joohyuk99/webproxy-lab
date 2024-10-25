@@ -6,12 +6,12 @@ int main() {
     int n1 = 0, n2 = 0;
 
     // Extract two arguments
-    if((buf = getenv("QUERY_STRING") != NULL)) {
+    if((buf = getenv("QUERY_STRING")) != NULL) {
         p = strchr(buf, '&');
         *p = '\0';
 
-        strcpy(arg1, buf);
-        strcpy(arg2, p + 1);
+        strcpy(arg1, buf + 3);
+        strcpy(arg2, p + 4);
 
         n1 = atoi(arg1);
         n2 = atoi(arg2);
@@ -19,8 +19,8 @@ int main() {
 
     // Make response body (HTML)
     int idx = 0;
-    idx += sprintf(content + idx, "QUERY_STRING = %s&%s", buf, p + 1);
-    idx += sprintf(content + idx, "Welcome to add.com: ");
+    idx += sprintf(content + idx, "QUERY_STRING = %s&%s<br/>", buf, p + 1);
+    idx += sprintf(content + idx, "Welcome to add.com<br/>");
     idx += sprintf(content + idx, "The Internet Additional Protal\r\n");
     idx += sprintf(content + idx, "<p>The Answer is %d + %d = %d\r\n<p>", n1, n2, n1 + n2);
     idx += sprintf(content + idx, "Thanks for visiting!\r\n");

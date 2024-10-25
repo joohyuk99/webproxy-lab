@@ -3,7 +3,7 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void server_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
@@ -51,7 +51,9 @@ void doit(int fd) {
     read_requesthdrs(&rio);
 
     // Parse URI from GET request
+    printf("buf: %s\n", buf);
     is_static = parse_uri(uri, filename, cgiargs);
+    printf("filename: %s\n", filename);
     if(stat(filename, &sbuf) < 0) {
         clienterror(fd, filename, "404", "Not found", "Tiny couldn't read the file");
         return;
@@ -109,15 +111,22 @@ int parse_uri(char *uri, char *filename, char *cgiargs) {
 
     if(!strstr(uri, "cgi-bin")) {  // Static content
         strcpy(cgiargs, "");
-        strcpy(filename, ".");
-        strcat(filename, uri);
+        strcpy(filename, "./");
+
         if(uri[strlen(uri)-1] == '/')
             strcat(filename, "home.html");
+        else {
+            printf("uri2: %s\n", uri);
+            for(char *temp = uri; temp != NULL; temp = strchr(temp, '/')) 
+                ptr = ++temp;
+            strcat(filename, ptr);
+        }
+
         return 1;
     }
 
     else {  // Dynamic content
-        ptr = index(uri, '?');
+        ptr = strchr(uri, '?');
         if(ptr) {
             strcpy(cgiargs, ptr + 1);
             *ptr = '\0';
@@ -131,16 +140,16 @@ int parse_uri(char *uri, char *filename, char *cgiargs) {
     }
 }
 
-void server_static(int fd, char *filename, int filesize) {
+void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXLINE];
 
     // Send response headers to client
     get_filetype(filename, filetype);
     int idx = 0;
-    idx += sprintf(buf + idx, "HTTP/1.0 200 OK\r\n");
+    idx += sprintf(buf + idx, "HTTP/1.1 200 OK\r\n");
     idx += sprintf(buf + idx, "Server: Tiny Web Server\r\n");
-    idx += sprintf(buf + idx, "Connection: close\r\n");
+    idx += sprintf(buf + idx, "Connection: keep-alive\r\n");
     idx += sprintf(buf + idx, "Content-length: %d\r\n", filesize);
     idx += sprintf(buf + idx, "Content-type: %s\r\n\r\n", filetype);
     Rio_writen(fd, buf, strlen(buf));
@@ -149,10 +158,11 @@ void server_static(int fd, char *filename, int filesize) {
 
     // Send response body to client
     srcfd = Open(filename, O_RDONLY, 0);
-    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    char* temp = (char*)malloc(filesize);
+    Rio_readn(srcfd, temp, filesize);
     Close(srcfd);
-    Rio_writen(fd, srcp, filesize);
-    Munmap(srcp, filesize);
+    Rio_writen(fd, temp, filesize);
+    free(temp);
 }
 
 void get_filetype(char *filename, char *filetype) {
@@ -164,6 +174,10 @@ void get_filetype(char *filename, char *filetype) {
         strcpy(filetype, "image/png");
     else if(strstr(filename, ".jpg"))
         strcpy(filetype, "image/jpeg");
+    else if(strstr(filename, ".mpg"))
+        strcpy(filetype, "vedio/mpeg");
+    else if(strstr(filename, ".mp4"))
+        strcpy(filetype, "vedio/mp4");
     else 
         strcpy(filetype, "text/plain");
 }
@@ -172,7 +186,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     char buf[MAXLINE], *emptylist[] = { NULL };
 
     // Return first part of HTTP response
-    sprintf(buf, "HTTP/1.0 200 OK\r\n");
+    sprintf(buf, "HTTP/1.1 200 OK\r\n");
     Rio_writen(fd, buf, strlen(buf));
     sprintf(buf, "Server: Tiny Web Server\r\n");
     Rio_writen(fd, buf, strlen(buf));
