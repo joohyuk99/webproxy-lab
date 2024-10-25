@@ -139,12 +139,12 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
         Rio_readlineb(&rio, buf, MAXBUF);  // read line from server
         if(!strncmp(buf, "Content-length", 14))  // find http body len
             sscanf(buf, "%*s %ld", &body_len);
-        printf("read line from server: %s", buf);
+        printf("%s", buf);
         Rio_writen(clientfd, buf, strlen(buf));  // send line to client
     } while(strcmp(buf, "\r\n"));
-    Rio_writen(clientfd, buf, strlen(buf));
 
     // send http body to client
+    printf("body_len: %ld\n", body_len);
     char* temp = (char*)malloc(body_len);
     Rio_readnb(&rio, temp, body_len);
     Rio_writen(clientfd, temp, body_len);
