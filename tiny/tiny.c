@@ -110,7 +110,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs) {
 
     if(!strstr(uri, "cgi-bin")) {  // Static content
         strcpy(cgiargs, "");
-        strcpy(filename, "./");
+        strcpy(filename, "");
 
         if(uri[strlen(uri)-1] == '/')
             strcat(filename, "home.html");
@@ -132,8 +132,9 @@ int parse_uri(char *uri, char *filename, char *cgiargs) {
 
         else
             strcpy(cgiargs, "");
-        strcpy(filename, ".");
-        strcat(filename, uri);
+        strcpy(filename, "./");
+        ptr = strstr(uri, "cgi-bin");
+        strcat(filename, ptr);
         return 0;
     }
 }

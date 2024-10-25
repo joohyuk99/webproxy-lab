@@ -1,7 +1,7 @@
 *.o
-*~
-tiny
-adder
+tiny/tiny
 echoclient
 echoserver
 *.mp4
+adder
+!tiny/add.html
