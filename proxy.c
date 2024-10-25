@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "csapp.h"
 
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
@@ -10,6 +10,5 @@ static const char *user_agent_hdr =
     "Firefox/10.0.3\r\n";
 
 int main() {
-  printf("%s", user_agent_hdr);
-  return 0;
+    
 }
