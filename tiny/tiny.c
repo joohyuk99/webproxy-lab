@@ -94,7 +94,7 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
     Rio_writen(fd, body, strlen(body));
 }
 
-void read_requesthdrs(rio_t *rp) {
+void read_requesthdrs(rio_t *rp) { printf("readrequestheader\n");
     char buf[MAXLINE];
 
     Rio_readlineb(rp, buf, MAXLINE);
@@ -147,7 +147,7 @@ void serve_static(int fd, char *filename, int filesize) {
     int idx = 0;
     idx += sprintf(buf + idx, "HTTP/1.1 200 OK\r\n");
     idx += sprintf(buf + idx, "Server: Tiny Web Server\r\n");
-    idx += sprintf(buf + idx, "Connection: keep-alive\r\n");
+    idx += sprintf(buf + idx, "Connection: close\r\n");
     idx += sprintf(buf + idx, "Content-length: %d\r\n", filesize);
     idx += sprintf(buf + idx, "Content-type: %s\r\n\r\n", filetype);
     Rio_writen(fd, buf, strlen(buf));
