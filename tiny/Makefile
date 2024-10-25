@@ -1,22 +1,18 @@
 CC = gcc
-CFLAGS = -O2 -Wall -I .
+CFLAGS = -g -Wall
+LDFLAGS = -lpthread
 
-# This flag includes the Pthreads library on a Linux box.
-# Others systems will probably require something different.
-LIB = -lpthread
+all: tiny adder
 
-all: tiny cgi
-
-tiny: tiny.c csapp.o
-	$(CC) $(CFLAGS) -o tiny tiny.c csapp.o $(LIB)
-
-csapp.o: csapp.c
+csapp.o:
 	$(CC) $(CFLAGS) -c csapp.c
 
-cgi:
-	(cd cgi-bin; make)
+adder: csapp.o
+	$(MAKE) -C cgi-bin adder
+
+tiny: adder csapp.o
+	$(CC) $(CFLAGS) -o tiny tiny.c csapp.o
+	./tiny 8000
 
 clean:
-	rm -f *.o tiny *~
-	(cd cgi-bin; make clean)
-
+	rm -f *~ *.o tiny ./cgi-bin/adder
