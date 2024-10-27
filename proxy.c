@@ -13,6 +13,10 @@ static const char *user_agent_hdr =
 #define true 1
 #define false 2
 
+sem_t sem1;  // semaphore for listen file descriptor
+
+void *thread(void *vargp);
+
 void doit(int clientfd);
 void getResponseToClient(int clientfd, char *request);
 void sendRequestToServer(int clientfd, char* request, char* response);
@@ -27,22 +31,39 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    int listenfd, connfd;  // file descriptor for client
+    int listenfd, *connfd;  // file descriptor for client
     char hostname[MAXLINE], port[MAXLINE];  // client hostname and port
 
     // socket variables for client
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
 
+    fd_set read_set;
+    pthread_t tid;
+    FD_ZERO(&read_set);
+    FD_SET(listenfd, &read_set);
+
+    Sem_init(&sem1, NULL, 1);
+
     listenfd = Open_listenfd(argv[1]);  // listen from client
     while(true) {
         clientlen = sizeof(struct sockaddr_storage);
-        connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
+        P(&sem1);
+        connfd = Malloc(sizeof(int));
+        *connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
         Getnameinfo((SA*)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accept connection from %s:%s\n", hostname, port);
-        doit(connfd);
-        Close(connfd);
+        Pthread_create(&tid, NULL, thread, connfd);
     }
+}
+
+void *thread(void *vargp) {
+    int connfd = *((int*)vargp);
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    V(&sem1);
+    doit(connfd);
+    Close(connfd);
 }
 
 void doit(int clientfd) {
