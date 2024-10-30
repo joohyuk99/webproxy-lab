@@ -12,6 +12,9 @@ adder: csapp.o
 
 tiny: adder csapp.o
 	$(CC) $(CFLAGS) -o tiny tiny.c csapp.o
+#	./tiny 8000
+
+run: tiny
 	./tiny 8000
 
 clean:

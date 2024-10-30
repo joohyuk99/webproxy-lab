@@ -31,9 +31,9 @@ int checkCached(int clientfd, char *method, char *uri) {
     cacheNode *currentNode = start;
     int compareURI;
     while(currentNode != NULL) {
-        printf("current cache: %s\n", currentNode->uri);
+        printf("👌 current cache: %s, %ld\n", currentNode->uri, currentNode->contentSize);
         compareURI = !strcmp(uri, currentNode->uri);
-        if(!compareURI) {  // if cached
+        if(compareURI) {  // if cached
             Rio_writen(clientfd, currentNode->header, strlen(currentNode->header));
             printf("cached header:\n");
             printf("%s", currentNode->header);
@@ -41,6 +41,7 @@ int checkCached(int clientfd, char *method, char *uri) {
             return 1;
         }
         else {
+            printf("current uri: %s\n", currentNode->uri);
             currentNode = currentNode->next;
         }
     }
@@ -73,8 +74,37 @@ void cached(int clientfd, char *uri, char *header, char *content, int contentSiz
     strcpy(new->content, content);
     new->contentSize = contentSize;
 
+    printf("cache header:\n");
+    printf("%s", header);
+
+    if(start == NULL) {
+        start = end = new;
+    }
+    else {
+        end->next = new;
+        new->prev = end;
+        end = end->next;
+    }
+    start->prev = end->next = NULL;
+
     Rio_writen(clientfd, header, strlen(header));
     Rio_writen(clientfd, content, contentSize);
+
+    printf("cache\n");
+    printf("%s\n", start->uri);
+    printf("%ld\n", start->contentSize);
+    if(start->next == NULL)
+        printf("NULL\n");
+    else {
+        printf("%s\n", start->next->uri);
+        printf("%d\n", start->next->contentSize);
+        if(start->next->next == NULL)
+            printf("NULL\n");
+        else {
+            printf("%s\n", start->next->next->uri);
+            printf("%d\n", start->next->next->contentSize);
+        }
+    }
 
     return;
 }

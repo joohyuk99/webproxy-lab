@@ -86,7 +86,6 @@ void doit(int clientfd) {
     // connect to server and send request
     // get response from server and send to client
     sendRequestToServer(clientfd, request_from_client, response_form_server);
-    printf("444444444444444444444444444444\n\n");
 }
 
 void getResponseToClient(int clientfd, char *request) {
@@ -138,21 +137,22 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
     int serverfd;  // file descriptor to server socket
 
     // for request to server
-    char method[MAXLINE], uri[MAXLINE];
+    char method[MAXLINE], uri[MAXLINE], cacheURI[MAXLINE];
     sscanf(request, "%s %s %*s", method, uri);
     printf("method, uri: %s %s\n", method, uri);
 
     // check request is cached
     // if cached, response client from cache
-    // if(checkCached(clientfd, method, uri)) {
-    //     printf("%s %s is cached\n", method, uri);
-    //     return;
-    // }
+    if(checkCached(clientfd, method, uri)) {
+        printf("%s %s is cached!!!!!!!!!!!!!!!!!\n", method, uri);
+        return;
+    }
 
     // server hostname and port number
     char hostname[MAXLINE], port[MAXLINE];
 
     // parse uri and get hostname, port
+    strcpy(cacheURI, uri);
     parseURI(uri, hostname, port);
     printf("hostname: %s, port: %s\n", hostname, port);
 
@@ -173,7 +173,7 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
             sscanf(buf, "%*s %ld", &contentSize);
         idx += sprintf(header + idx, buf);
         //printf("%s", buf);
-        Rio_writen(clientfd, buf, strlen(buf));  // send line to client
+        //Rio_writen(clientfd, buf, strlen(buf));  // send line to client
     } while(strcmp(buf, "\r\n"));
 
     // resive http content from server
@@ -182,21 +182,16 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
     Rio_readnb(&rio, temp, contentSize);
 
     // caching content and response to client
-    //cached(clientfd, uri, header, temp, contentSize);
-    Rio_writen(clientfd, temp, contentSize);
-printf("222222222222222222222222222222\n\n");
+    cached(clientfd, cacheURI, header, temp, contentSize);
+    //Rio_writen(clientfd, temp, contentSize);
     Free(temp);
 
     Close(serverfd);
-printf("333333333333333333333333333333333333\n\n");
     return;
 }
 
-void parseURI(char *_uri, char *hostname, char *port) {
+void parseURI(char *uri, char *hostname, char *port) {
 
-    char *uri;
-    strcpy(uri, _uri);
-printf("uri, _uri %s %s\n", uri, _uri);
     if(!strncmp(uri, "http", 4));
         uri = strstr(uri, "//") + 2;
     
