@@ -1,8 +1,5 @@
 #include "csapp.h"
-
-/* Recommended max cache and object sizes */
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
+#include "cache.c"
 
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr =
@@ -43,7 +40,11 @@ int main(int argc, char **argv) {
     FD_ZERO(&read_set);
     FD_SET(listenfd, &read_set);
 
+    // init semaphore
     Sem_init(&sem1, NULL, 1);
+    Sem_init(&sem2, NULL, 1);
+
+    initCache();  // init cache
 
     listenfd = Open_listenfd(argv[1]);  // listen from client
     while(true) {
@@ -85,6 +86,7 @@ void doit(int clientfd) {
     // connect to server and send request
     // get response from server and send to client
     sendRequestToServer(clientfd, request_from_client, response_form_server);
+    printf("444444444444444444444444444444\n\n");
 }
 
 void getResponseToClient(int clientfd, char *request) {
@@ -140,6 +142,13 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
     sscanf(request, "%s %s %*s", method, uri);
     printf("method, uri: %s %s\n", method, uri);
 
+    // check request is cached
+    // if cached, response client from cache
+    // if(checkCached(clientfd, method, uri)) {
+    //     printf("%s %s is cached\n", method, uri);
+    //     return;
+    // }
+
     // server hostname and port number
     char hostname[MAXLINE], port[MAXLINE];
 
@@ -154,33 +163,47 @@ void sendRequestToServer(int clientfd, char *request, char *response) {
     // read response from server
     Rio_readinitb(&rio, serverfd);
     
-    // send http header to client
-    long int body_len;
+    // resive http header from server
+    char header[MAXLINE];
+    int idx = 0;
+    long int contentSize;
     do {
         Rio_readlineb(&rio, buf, MAXBUF);  // read line from server
         if(!strncmp(buf, "Content-length", 14))  // find http body len
-            sscanf(buf, "%*s %ld", &body_len);
-        printf("%s", buf);
+            sscanf(buf, "%*s %ld", &contentSize);
+        idx += sprintf(header + idx, buf);
+        //printf("%s", buf);
         Rio_writen(clientfd, buf, strlen(buf));  // send line to client
     } while(strcmp(buf, "\r\n"));
 
-    // send http body to client
-    printf("body_len: %ld\n", body_len);
-    char* temp = (char*)malloc(body_len);
-    Rio_readnb(&rio, temp, body_len);
-    Rio_writen(clientfd, temp, body_len);
-    free(temp);
+    // resive http content from server
+    printf("content size: %ld\n", contentSize);
+    char* temp = (char*)Malloc(contentSize);
+    Rio_readnb(&rio, temp, contentSize);
+
+    // caching content and response to client
+    //cached(clientfd, uri, header, temp, contentSize);
+    Rio_writen(clientfd, temp, contentSize);
+printf("222222222222222222222222222222\n\n");
+    Free(temp);
 
     Close(serverfd);
+printf("333333333333333333333333333333333333\n\n");
     return;
 }
 
-void parseURI(char *uri, char *hostname, char *port) {
+void parseURI(char *_uri, char *hostname, char *port) {
 
+    char *uri;
+    strcpy(uri, _uri);
+printf("uri, _uri %s %s\n", uri, _uri);
     if(!strncmp(uri, "http", 4));
         uri = strstr(uri, "//") + 2;
     
-    char *p = strstr(uri, "/");
+    char *p = strstr(uri, "?");
+    if(p != NULL)
+        *p = '\0';
+    p = strstr(uri, "/");
     *p = '\0';
 
     p = strstr(uri, ":");
